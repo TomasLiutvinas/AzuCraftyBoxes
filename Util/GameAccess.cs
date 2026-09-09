@@ -42,7 +42,8 @@ internal static class GameAccess
     public static void InventoryChanged(Inventory? inv)
     {
         if (inv == null || InventoryChangedMethod == null) { if (inv != null) LogMissing("Inventory.Changed"); return; }
-        InventoryChangedMethod.Invoke(inv, null);
+        // Pass explicit args: Mono ignores optional defaults when args array is null.
+        InventoryChangedMethod.Invoke(inv, new object[] { false, false });
     }
 
     public static void ContainerSave(Container container)
