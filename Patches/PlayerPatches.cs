@@ -379,7 +379,7 @@ static class ConsumeResourcesPatch
         }
         catch (Exception ex)
         {
-            AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogError($"Error in ConsumeResourcesPatch: {ex.Message}");
+            AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogError($"Error in ConsumeResourcesPatch: {ex.Message}\n{ex.StackTrace}");
         }
 
         return false;
