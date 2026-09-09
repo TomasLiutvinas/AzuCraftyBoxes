@@ -4,7 +4,7 @@ using TMPro;
 
 namespace AzuCraftyBoxes.Patches;
 
-[HarmonyPatch(typeof(Hud), nameof(Hud.SetupPieceInfo))]
+[HarmonyPatch(typeof(Hud), "SetupPieceInfo")]
 public class HUDPatches
 {
     private const float UpdateInterval = 0.5f;
@@ -62,7 +62,7 @@ public class HUDPatches
     }
 }
 
-[HarmonyPatch(typeof(Hud), nameof(Hud.Awake))]
+[HarmonyPatch(typeof(Hud), "Awake")]
 static class HudAwakePatch
 {
     static void Postfix(Hud __instance)

@@ -4,7 +4,7 @@ using static AzuCraftyBoxes.Util.Functions.MiscFunctions;
 
 namespace AzuCraftyBoxes.Patches;
 
-[HarmonyPatch(typeof(Container), nameof(Container.Awake))]
+[HarmonyPatch(typeof(Container), "Awake")]
 internal static class ContainerAwakePatch
 {
     private static void Postfix(Container __instance)
@@ -31,7 +31,7 @@ internal static class ContainerAwakePatch
     }
 }
 
-[HarmonyPatch(typeof(Container), nameof(Container.Load))]
+[HarmonyPatch(typeof(Container), "Load")]
 static class ContainerLoadPatch
 {
     static void Postfix(Container __instance)
@@ -46,7 +46,7 @@ static class ContainerLoadPatch
             return;
         }
 
-        if (player.m_isLoading || player.m_teleporting) return;
+        if (AzuCraftyBoxes.Util.GameAccess.PlayerIsLoading(player) || AzuCraftyBoxes.Util.GameAccess.PlayerTeleporting(player)) return;
 
         if (HasAccessToContainer(__instance))
         {
@@ -55,7 +55,7 @@ static class ContainerLoadPatch
     }
 }
 
-[HarmonyPatch(typeof(Container), nameof(Container.OnDestroyed))]
+[HarmonyPatch(typeof(Container), "OnDestroyed")]
 internal static class ContainerOnDestroyedPatch
 {
     private static void Postfix(Container __instance)
@@ -66,7 +66,7 @@ internal static class ContainerOnDestroyedPatch
     }
 }
 
-[HarmonyPatch(typeof(WearNTear), nameof(WearNTear.OnDestroy))]
+[HarmonyPatch(typeof(WearNTear), "OnDestroy")]
 static class WearNTearOnDestroyPatch
 {
     static void Prefix(WearNTear __instance)
@@ -93,14 +93,14 @@ static class WearNTearOnDestroyPatch
     }
 }
 
-[HarmonyPatch(typeof(Player), nameof(Player.UpdateTeleport))]
+[HarmonyPatch(typeof(Player), "UpdateTeleport")]
 public static class PlayerUpdateTeleportPatchCleanupContainers
 {
     public static void Prefix(float dt)
     {
         if (ShouldPrevent()) return;
 
-        if (!(Player.m_localPlayer != null) || !Player.m_localPlayer.m_teleporting)
+        if (!(Player.m_localPlayer != null) || !AzuCraftyBoxes.Util.GameAccess.PlayerTeleporting(Player.m_localPlayer))
             return;
         foreach (Container container in Boxes.Containers.ToList().Where(container => (!(container != null) || !(container.transform != null)
                      ? 0

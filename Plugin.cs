@@ -96,7 +96,19 @@ namespace AzuCraftyBoxes
             CraftyContainerData.AssignLocalValue(File.ReadAllText(yamlPath));
 
             Assembly assembly = Assembly.GetExecutingAssembly();
-            harmony.PatchAll(assembly);
+            // Patch each target separately so one broken game method can't kill the whole mod.
+            foreach (Type type in assembly.GetTypes())
+            {
+                if (type.GetCustomAttributes(typeof(HarmonyPatch), false).Length == 0) continue;
+                try
+                {
+                    harmony.CreateClassProcessor(type).Patch();
+                }
+                catch (Exception e)
+                {
+                    AzuCraftyBoxesLogger.LogWarning($"Failed to patch {type.Name}: {e.GetType().Name}: {e.Message}");
+                }
+            }
             SetupWatcher();
 
             Config.Save();
@@ -153,7 +165,7 @@ namespace AzuCraftyBoxes
                 result = 1;
             }
 
-            if (preventPullingLogic.Value.IsKeyDown() && player.TakeInput())
+            if (preventPullingLogic.Value.IsKeyDown() && AzuCraftyBoxes.Util.GameAccess.PlayerTakeInput(player))
             {
                 bool isAllowed = player.TogglePullingAllowed(); // now uses 1=allowed, 0=prevented
                 var onOff = isAllowed
@@ -163,10 +175,10 @@ namespace AzuCraftyBoxes
                 AzuCraftyBoxesLogger.LogIfReleaseAndDebugEnable(message);
                 if (preventPullingLogicMessage.Value.isOn())
                 {
-                    Chat.instance.AddInworldText(
+                    AzuCraftyBoxes.Util.GameAccess.ChatAddInworldText(
                         player.gameObject,
                         player.GetPlayerID(),
-                        player.GetHeadPoint(),
+                        player.GetEyePoint(),
                         Talker.Type.Normal,
                         UserInfo.GetLocalUser(),
                         Localization.instance.Localize(string.Format(preventPullingStringFormat.Value, message, onOff))
@@ -175,11 +187,11 @@ namespace AzuCraftyBoxes
 
                 if (!isAllowed && preventPullingStatusEffectDisplay.Value.isOn())
                 {
-                    player.m_seman.AddStatusEffect(SE_ContainerPull.SE_ContainerPulling);
+                    AzuCraftyBoxes.Util.GameAccess.GetSEMan(player)?.AddStatusEffect(SE_ContainerPull.SE_ContainerPulling);
                 }
                 else
                 {
-                    player.m_seman.RemoveStatusEffect(SE_ContainerPull.SE_ContainerPulling);
+                    AzuCraftyBoxes.Util.GameAccess.GetSEMan(player)?.RemoveStatusEffect(SE_ContainerPull.SE_ContainerPulling);
                 }
 
                 result = isAllowed ? 1 : 0;

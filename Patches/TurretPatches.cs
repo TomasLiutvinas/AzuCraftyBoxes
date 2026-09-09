@@ -3,7 +3,7 @@ using AzuCraftyBoxes.Util.Functions;
 
 namespace AzuCraftyBoxes.Patches;
 
-[HarmonyPatch(typeof(Turret), nameof(Turret.UseItem))]
+[HarmonyPatch(typeof(Turret), "UseItem")]
 static class Turret_UseItem_Patch
 {
     static bool Prefix(Turret __instance, Humanoid user, ref ItemDrop.ItemData item, ref bool __result, ZNetView ___m_nview)
@@ -18,7 +18,7 @@ static class Turret_UseItem_Patch
             ___m_nview.ClaimOwnership();
         }
 
-        item = __instance.FindAmmoItem(inventory, true);
+        item = AzuCraftyBoxes.Util.GameAccess.TurretAmmoItem(__instance, inventory, true);
 
         if (!pullAll && item != null)
             return true;
@@ -58,7 +58,7 @@ static class Turret_UseItem_Patch
             if (amount > 0)
             {
                 inventory.RemoveItem(sharedName, amount);
-                inventory.Changed();
+                AzuCraftyBoxes.Util.GameAccess.InventoryChanged(inventory);
                 for (int i = 0; i < amount; ++i)
                     ___m_nview.InvokeRPC("RPC_AddAmmo", ammoType);
 
@@ -115,22 +115,22 @@ static class Turret_UseItem_Patch
     }
 }
 
-[HarmonyPatch(typeof(Turret), nameof(Turret.RPC_AddAmmo))]
+[HarmonyPatch(typeof(Turret), "RPC_AddAmmo")]
 static class PreventOverfillJIC_TurretRPC_AddAmmoPatch
 {
     static bool Prefix(Turret __instance)
     {
-        if (!__instance.m_nview.IsOwner()) return true;
+        if (!__instance.GetComponent<ZNetView>().IsOwner()) return true;
         return __instance.GetAmmo() < __instance.m_maxAmmo;
     }
 }
 
-[HarmonyPatch(typeof(Turret), nameof(Turret.GetHoverText))]
+[HarmonyPatch(typeof(Turret), "GetHoverText")]
 static class TurretGetHoverTextPatch
 {
     static void Postfix(Turret __instance, ref string __result)
     {
-        if (!__instance.m_nview.IsValid())
+        if (!__instance.GetComponent<ZNetView>().IsValid())
             return;
         if (MiscFunctions.ShouldPrevent())
         {
@@ -158,7 +158,7 @@ static class TurretGetHoverTextPatch
         }
 
         string sharedName = prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_name;
-        int inInv = Player.m_localPlayer?.m_inventory.CountItems(sharedName) ?? 0;
+        int inInv = Player.m_localPlayer?.GetInventory().CountItems(sharedName) ?? 0;
         List<IContainer> nearbyContainers = Boxes.QueryFrame.Get(__instance, AzuCraftyBoxesPlugin.mRange.Value);
         int inContainers = 0;
 

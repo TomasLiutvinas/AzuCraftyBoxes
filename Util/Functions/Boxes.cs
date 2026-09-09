@@ -438,7 +438,7 @@ public class Boxes
         if (!stopwatches.TryGetValue(hash, out stopwatch))
         {
             stopwatch = new Stopwatch();
-            stopwatches.TryAdd(hash, stopwatch);
+            if (!stopwatches.ContainsKey(hash)) stopwatches[hash] = stopwatch;
         }
 
         return stopwatch;

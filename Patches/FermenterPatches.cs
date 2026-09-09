@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace AzuCraftyBoxes.Patches;
 
-[HarmonyPatch(typeof(Fermenter), nameof(Fermenter.GetHoverText))]
+[HarmonyPatch(typeof(Fermenter), "GetHoverText")]
 [HarmonyBefore("org.bepinex.plugins.conversionsizespeed")]
 static class FermenterGetHoverTextPatch
 {
@@ -23,7 +23,7 @@ static class FermenterGetHoverTextPatch
     }
 }
 
-[HarmonyPatch(typeof(Fermenter), nameof(Fermenter.FindCookableItem))]
+[HarmonyPatch(typeof(Fermenter), "FindCookableItem")]
 static class SearchContainersAsWell
 {
     static void Postfix(Fermenter __instance, Inventory inventory, ref ItemDrop.ItemData __result)
@@ -59,12 +59,12 @@ static class SearchContainersAsWell
                 ItemDrop.ItemData cookableItem = containerInventory.GetItem(itemConversion.m_from.m_itemData.m_shared.m_name);
                 if (cookableItem == null) continue;
                 __result = cookableItem;
-                if (__instance.GetStatus() != Fermenter.Status.Empty || !__instance.IsItemAllowed(cookableItem) || !containerInventory.RemoveOneItem(cookableItem))
+                if (!AzuCraftyBoxes.Util.GameAccess.FermenterIsEmpty(__instance) || !AzuCraftyBoxes.Util.GameAccess.FermenterIsItemAllowed(__instance, cookableItem) || !containerInventory.RemoveOneItem(cookableItem))
                 {
                     return;
                 }
 
-                __instance.m_nview.InvokeRPC("RPC_AddItem", cookableItem.m_dropPrefab.name);
+                __instance.GetComponent<ZNetView>().InvokeRPC("RPC_AddItem", cookableItem.m_dropPrefab.name);
             }
         }
     }
@@ -90,14 +90,14 @@ public static class OverrideHoverTextFermenter
         }
 
         // Check if the player is looking at an object
-        return !Player.m_localPlayer.m_hovering || Player.m_localPlayer.m_hovering.GetComponentInParent<Fermenter>() != __instance;
+        return !Player.m_localPlayer.GetHoverObject() || Player.m_localPlayer.GetHoverObject().GetComponentInParent<Fermenter>() != __instance;
     }
 
     private static readonly Dictionary<int, (float time, List<string> items)> _cache = new();
 
     internal static void UpdateAddSwitchHoverText(Fermenter __instance, ref string result)
     {
-        bool free = __instance.GetStatus() == Fermenter.Status.Empty;
+        bool free = AzuCraftyBoxes.Util.GameAccess.FermenterIsEmpty(__instance);
 
 
         if (!free) return;
@@ -131,7 +131,7 @@ public static class OverrideHoverTextFermenter
 
     private static bool HasItemInInventoryOrContainers(string prefabName, string itemName, Fermenter fermenter)
     {
-        Inventory? inv = Player.m_localPlayer?.m_inventory;
+        Inventory? inv = Player.m_localPlayer?.GetInventory();
         if (inv != null && inv.CountItems(itemName) > 0)
             return true;
 

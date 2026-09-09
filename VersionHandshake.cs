@@ -1,6 +1,6 @@
 ﻿namespace AzuCraftyBoxes
 {
-    [HarmonyPatch(typeof(ZNet), nameof(ZNet.OnNewConnection))]
+    [HarmonyPatch(typeof(ZNet), "OnNewConnection")]
     public static class RegisterAndCheckVersion
     {
         private static void Prefix(ZNetPeer peer, ref ZNet __instance)
@@ -17,25 +17,26 @@
         }
     }
 
-    [HarmonyPatch(typeof(ZNet), nameof(ZNet.RPC_PeerInfo))]
+    [HarmonyPatch(typeof(ZNet), "RPC_PeerInfo")]
     public static class VerifyClient
     {
         private static bool Prefix(ZRpc rpc, ZPackage pkg, ref ZNet __instance)
         {
             if (!__instance.IsServer() || RpcHandlers.ValidatedPeers.Contains(rpc)) return true;
             // Disconnect peer if they didn't send mod version at all
-            AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogWarning($"Peer ({rpc.m_socket.GetHostName()}) never sent version or couldn't due to previous disconnect, disconnecting");
+            AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogWarning($"Peer ({rpc.GetSocket().GetHostName()}) never sent version or couldn't due to previous disconnect, disconnecting");
             rpc.Invoke("Error", 3);
             return false; // Prevent calling underlying method
         }
 
         private static void Postfix(ZNet __instance)
         {
-            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), $"{AzuCraftyBoxesPlugin.ModName}RequestAdminSync", new ZPackage());
+            // 2-arg InvokeRoutedRPC targets the server internally (GetServerPeerID went private).
+            ZRoutedRpc.instance.InvokeRoutedRPC($"{AzuCraftyBoxesPlugin.ModName}RequestAdminSync", new ZPackage());
         }
     }
 
-    [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.ShowConnectError))]
+    [HarmonyPatch(typeof(FejdStartup), "ShowConnectError")]
     public class ShowConnectionError
     {
         private static void Postfix(FejdStartup __instance)
@@ -49,14 +50,14 @@
         }
     }
 
-    [HarmonyPatch(typeof(ZNet), nameof(ZNet.Disconnect))]
+    [HarmonyPatch(typeof(ZNet), "Disconnect")]
     public static class RemoveDisconnectedPeerFromVerified
     {
         private static void Prefix(ZNetPeer peer, ref ZNet __instance)
         {
             if (!__instance.IsServer()) return;
             // Remove peer from validated list
-            AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogInfo($"Peer ({peer.m_rpc.m_socket.GetHostName()}) disconnected, removing from validated list");
+            AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogInfo($"Peer ({peer.m_rpc.GetSocket().GetHostName()}) disconnected, removing from validated list");
             _ = RpcHandlers.ValidatedPeers.Remove(peer.m_rpc);
         }
     }
@@ -74,7 +75,7 @@
                 AzuCraftyBoxesPlugin.ConnectionError = $"{AzuCraftyBoxesPlugin.ModName} Installed: {AzuCraftyBoxesPlugin.ModVersion}\n Needed: {version}";
                 if (!ZNet.instance.IsServer()) return;
                 // Different versions - force disconnect client from server
-                AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogWarning($"Peer ({rpc.m_socket.GetHostName()}) has incompatible version, disconnecting...");
+                AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogWarning($"Peer ({rpc.GetSocket().GetHostName()}) has incompatible version, disconnecting...");
                 rpc.Invoke("Error", 3);
             }
             else
@@ -87,7 +88,7 @@
                 else
                 {
                     // Add client to validated list
-                    AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogInfo($"Adding peer ({rpc.m_socket.GetHostName()}) to validated list");
+                    AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogInfo($"Adding peer ({rpc.GetSocket().GetHostName()}) to validated list");
                     ValidatedPeers.Add(rpc);
                 }
             }

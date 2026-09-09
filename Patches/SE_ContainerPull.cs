@@ -3,7 +3,7 @@ using AzuCraftyBoxes.Util;
 
 namespace AzuCraftyBoxes.Patches;
 
-[HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.Awake))]
+[HarmonyPatch(typeof(ObjectDB), "Awake")]
 static class ObjectDBAwakePatch
 {
     [HarmonyPriority(Priority.VeryHigh)]
@@ -14,11 +14,11 @@ static class ObjectDBAwakePatch
             __instance.m_StatusEffects.Add(SE_ContainerPull.SE_ContainerPulling);
         }
 
-        __instance.UpdateRegisters();
+        AzuCraftyBoxes.Util.GameAccess.ObjectDBUpdateRegisters(__instance);
     }
 }
 
-[HarmonyPatch(typeof(Player), nameof(Player.SetLocalPlayer))]
+[HarmonyPatch(typeof(Player), "SetLocalPlayer")]
 static class PlayerSetLocalPlayerPatch
 {
     static void Postfix(Player __instance)
@@ -27,7 +27,7 @@ static class PlayerSetLocalPlayerPatch
     }
 }
 
-[HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
+[HarmonyPatch(typeof(Player), "OnSpawned")]
 static class PlayerOnSpawnedPatch
 {
     static void Postfix(Player __instance, bool spawnValkyrie)
@@ -37,7 +37,7 @@ static class PlayerOnSpawnedPatch
 }
 
 // After a death and respawn, also re‑apply the saved state.
-[HarmonyPatch(typeof(Player), nameof(Player.OnRespawn))]
+[HarmonyPatch(typeof(Player), "OnRespawn")]
 static class PlayerOnRespawnPatch
 {
     static void Postfix(Player __instance)
@@ -74,7 +74,9 @@ public class SE_ContainerPull
     private static Texture2D LoadTexture(string name)
     {
         Texture2D texture = new(0, 0);
-        texture.LoadImage(ReadEmbeddedFileBytes("images." + name));
+        // ImageConversionModule reference dropped for Linux builds; call LoadImage via reflection.
+        typeof(Texture2D).GetMethod("LoadImage", BindingFlags.Public | BindingFlags.Instance, null, new[] { typeof(byte[]) }, null)
+            ?.Invoke(texture, new object[] { ReadEmbeddedFileBytes("images." + name) });
         return texture;
     }
 

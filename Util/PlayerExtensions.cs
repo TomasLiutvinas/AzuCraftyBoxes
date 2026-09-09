@@ -34,10 +34,12 @@ public static class PlayerPullingExtensions
     public static void ApplyPullingStatusEffect(this Player player)
     {
         bool allowed = player.IsPullingAllowed();
+        SEMan? seman = GameAccess.GetSEMan(player);
+        if (seman == null) return;
         if (!allowed && preventPullingStatusEffectDisplay.Value.isOn())
-            player.m_seman.AddStatusEffect(SE_ContainerPull.SE_ContainerPulling);
+            seman.AddStatusEffect(SE_ContainerPull.SE_ContainerPulling);
         else
-            player.m_seman.RemoveStatusEffect(SE_ContainerPull.SE_ContainerPulling);
+            seman.RemoveStatusEffect(SE_ContainerPull.SE_ContainerPulling);
     }
 
     /// <summary>

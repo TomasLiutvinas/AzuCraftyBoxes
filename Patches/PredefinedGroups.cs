@@ -2,7 +2,7 @@
 
 namespace AzuCraftyBoxes.Patches;
 
-[HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.Awake))]
+[HarmonyPatch(typeof(ObjectDB), "Awake")]
 static class PredefinedGroupGrab
 {
     static void Postfix(ObjectDB __instance)

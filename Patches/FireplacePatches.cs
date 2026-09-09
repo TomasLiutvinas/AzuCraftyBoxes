@@ -3,7 +3,7 @@ using AzuCraftyBoxes.Util.Functions;
 
 namespace AzuCraftyBoxes.Patches;
 
-[HarmonyPatch(typeof(Fireplace), nameof(Fireplace.Interact))]
+[HarmonyPatch(typeof(Fireplace), "Interact")]
 static class FireplaceInteractPatch
 {
     static bool Prefix(Fireplace __instance, Humanoid user, bool hold, ref bool __result, ZNetView ___m_nview)
@@ -34,7 +34,7 @@ static class FireplaceInteractPatch
         {
             int amount = (int)Mathf.Min(__instance.m_maxFuel - fuel, inventory.CountItems(__instance.m_fuelItem.m_itemData.m_shared.m_name));
             inventory.RemoveItem(__instance.m_fuelItem.m_itemData.m_shared.m_name, amount);
-            inventory.Changed();
+            AzuCraftyBoxes.Util.GameAccess.InventoryChanged(inventory);
             for (int i = 0; i < amount; ++i)
                 ___m_nview.InvokeRPC("RPC_AddFuel");
 
@@ -88,7 +88,7 @@ static class FireplaceInteractPatch
     }
 }
 
-[HarmonyPatch(typeof(Fireplace), nameof(Fireplace.RPC_AddFuel))]
+[HarmonyPatch(typeof(Fireplace), "RPC_AddFuel")]
 static class CapFuel_FireplaceRPC_AddFuelPatch
 {
     static bool Prefix(Fireplace __instance, ZNetView ___m_nview)
@@ -98,7 +98,7 @@ static class CapFuel_FireplaceRPC_AddFuelPatch
     }
 }
 
-[HarmonyPatch(typeof(Fireplace), nameof(Fireplace.GetHoverText))]
+[HarmonyPatch(typeof(Fireplace), "GetHoverText")]
 static class FireplaceGetHoverTextPatch
 {
     static void Postfix(Fireplace __instance, ref string __result)
@@ -118,7 +118,7 @@ static class FireplaceGetHoverTextPatch
             return;
         }
 
-        ZDO? zdo = __instance.m_nview != null && __instance.m_nview.IsValid() ? __instance.m_nview.GetZDO() : null;
+        ZDO? zdo = __instance.GetComponent<ZNetView>() != null && __instance.GetComponent<ZNetView>().IsValid() ? __instance.GetComponent<ZNetView>().GetZDO() : null;
         if (zdo == null)
         {
             return;
@@ -140,7 +140,7 @@ static class FireplaceGetHoverTextPatch
             return;
         }
 
-        int inInv = Player.m_localPlayer?.m_inventory?.CountItems(sharedName) ?? 0;
+        int inInv = Player.m_localPlayer?.GetInventory()?.CountItems(sharedName) ?? 0;
         List<IContainer> nearbyContainers = Boxes.QueryFrame.Get(__instance, AzuCraftyBoxesPlugin.mRange.Value);
         int inContainers = 0;
         __instance.m_fuelItem.m_itemData.m_dropPrefab = __instance.m_fuelItem.gameObject;

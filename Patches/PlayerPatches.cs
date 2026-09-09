@@ -3,7 +3,7 @@ using AzuCraftyBoxes.Util.Functions;
 
 namespace AzuCraftyBoxes.Patches;
 
-[HarmonyPatch(typeof(Player), nameof(Player.SetCraftingStation))]
+[HarmonyPatch(typeof(Player), "SetCraftingStation")]
 static class CacheCurrentCraftingStationPrefabName
 {
     public static string CachedStationName = string.Empty;
@@ -14,7 +14,7 @@ static class CacheCurrentCraftingStationPrefabName
     }
 }
 
-[HarmonyPatch(typeof(Player), nameof(Player.UpdateKnownRecipesList))]
+[HarmonyPatch(typeof(Player), "UpdateKnownRecipesList")]
 static class UpdateKnownRecipesListPatch
 {
     static void Prefix()
@@ -30,7 +30,7 @@ static class UpdateKnownRecipesListPatch
     }
 }
 
-[HarmonyPatch(typeof(Player), nameof(Player.HaveRequirementItems), new[] { typeof(Recipe), typeof(bool), typeof(int), typeof(int) })]
+[HarmonyPatch(typeof(Player), "HaveRequirementItems", new[] { typeof(Recipe), typeof(bool), typeof(int), typeof(int) })]
 static class PlayerHaveRequirementsPatch
 {
     [HarmonyPriority(Priority.VeryHigh)]
@@ -137,7 +137,7 @@ static class PlayerHaveRequirementsPatch
     }
 }
 
-[HarmonyPatch(typeof(Player), nameof(Player.HaveRequirements), typeof(Recipe), typeof(bool), typeof(int), typeof(int))]
+[HarmonyPatch(typeof(Player), "HaveRequirements", typeof(Recipe), typeof(bool), typeof(int), typeof(int))]
 static class PlayerHaveRequirementsPatchRBoolInt
 {
     static void Postfix(Player __instance, Recipe recipe, bool discover, int qualityLevel, int amount, ref bool __result)
@@ -149,7 +149,7 @@ static class PlayerHaveRequirementsPatchRBoolInt
 
         if (discover)
         {
-            if (recipe.m_craftingStation && !__instance.KnowStationLevel(recipe.m_craftingStation.m_name, recipe.m_minStationLevel))
+            if (recipe.m_craftingStation && !AzuCraftyBoxes.Util.GameAccess.PlayerKnowStationLevel(__instance, recipe.m_craftingStation.m_name, recipe.m_minStationLevel))
                 return;
         }
         else if (!__instance.RequiredCraftingStation(recipe, qualityLevel, true))
@@ -175,20 +175,20 @@ static class PlayerHaveRequirementsPatchRBoolInt
                 {
                     if (resource.m_amount > 0)
                     {
-                        if (piece.m_requireOnlyOneIngredient)
-                        {
-                            if (p.m_knownMaterial.Contains(resource.m_resItem.m_itemData.m_shared.m_name))
-                                return true;
-                        }
-                        else if (!p.m_knownMaterial.Contains(resource.m_resItem.m_itemData.m_shared.m_name))
-                            return false;
+                            if (piece.m_requireOnlyOneIngredient)
+                            {
+                                if (AzuCraftyBoxes.Util.GameAccess.PlayerKnownMaterial(p, resource.m_resItem.m_itemData.m_shared.m_name))
+                                    return true;
+                            }
+                            else if (!AzuCraftyBoxes.Util.GameAccess.PlayerKnownMaterial(p, resource.m_resItem.m_itemData.m_shared.m_name))
+                                return false;
                     }
                 }
                 else
                 {
                     string sharedName = resource.m_resItem.m_itemData.m_shared.m_name;
                     int amount = resource.GetAmount(qualityLevel) * amountVanilla;
-                    int num = p.m_inventory.CountItems(sharedName);
+                    int num = p.GetInventory().CountItems(sharedName);
 
                     // Only check containers if inventory doesn't have enough
                     if (num < amount)
@@ -237,7 +237,7 @@ static class PlayerHaveRequirementsPatchRBoolInt
     }
 }
 
-[HarmonyPatch(typeof(Player), nameof(Player.HaveRequirements), typeof(Piece), typeof(Player.RequirementMode))]
+[HarmonyPatch(typeof(Player), "HaveRequirements", typeof(Piece), typeof(Player.RequirementMode))]
 static class HaveRequirementsPatch2
 {
     [HarmonyWrapSafe]
@@ -361,7 +361,7 @@ static class HaveRequirementsPatch2
     }
 }
 
-[HarmonyPatch(typeof(Player), nameof(Player.ConsumeResources))]
+[HarmonyPatch(typeof(Player), "ConsumeResources")]
 static class ConsumeResourcesPatch
 {
     static bool Prefix(Player __instance, Piece.Requirement[] requirements, int qualityLevel, int itemQuality = -1, int multiplier = 1)
@@ -386,7 +386,7 @@ static class ConsumeResourcesPatch
     }
 }
 
-[HarmonyPatch(typeof(Player), nameof(Player.GetFirstRequiredItem))]
+[HarmonyPatch(typeof(Player), "GetFirstRequiredItem")]
 static class CheckNearbyForOneIngredientItems
 {
     static void Postfix(Player __instance, Inventory inventory, Recipe recipe, int qualityLevel, ref int amount, ref int extraAmount, int craftMultiplier, ref ItemDrop.ItemData __result)
@@ -457,7 +457,7 @@ static class CheckNearbyForOneIngredientItems
     }
 }
 
-[HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.DoCrafting))]
+[HarmonyPatch(typeof(InventoryGui), "DoCrafting")]
 static class ConsumeLaterConsumptionItemsInventoryGuiDoCraftingPatch
 {
     static void Postfix(InventoryGui __instance)
@@ -493,7 +493,7 @@ static class ConsumeLaterConsumptionItemsInventoryGuiDoCraftingPatch
     }
 }
 
-[HarmonyPatch(typeof(Game), nameof(Game.Logout))]
+[HarmonyPatch(typeof(Game), "Logout")]
 static class GameLogoutPatch
 {
     static void Prefix(Game __instance)

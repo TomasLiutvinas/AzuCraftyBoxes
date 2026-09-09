@@ -3,7 +3,7 @@ using AzuCraftyBoxes.Util.Functions;
 
 namespace AzuCraftyBoxes.Patches;
 
-[HarmonyPatch(typeof(Smelter), nameof(Smelter.OnHoverAddOre))]
+[HarmonyPatch(typeof(Smelter), "OnHoverAddOre")]
 [HarmonyBefore("org.bepinex.plugins.conversionsizespeed")]
 static class SmelterOnHoverAddOrePatch
 {
@@ -18,7 +18,7 @@ static class SmelterOnHoverAddOrePatch
     }
 }
 
-[HarmonyPatch(typeof(Smelter), nameof(Smelter.OnHoverAddFuel))]
+[HarmonyPatch(typeof(Smelter), "OnHoverAddFuel")]
 [HarmonyBefore("org.bepinex.plugins.conversionsizespeed")]
 static class SmelterOnHoverAddFuelPatch
 {
@@ -53,7 +53,7 @@ public static class OverrideHoverText
         }
 
         // Check if the player is looking at an object
-        if (!Player.m_localPlayer.m_hovering || Player.m_localPlayer.m_hovering.GetComponentInParent<Smelter>() != __instance)
+        if (!Player.m_localPlayer.GetHoverObject() || Player.m_localPlayer.GetHoverObject().GetComponentInParent<Smelter>() != __instance)
         {
             return true;
         }
@@ -64,7 +64,7 @@ public static class OverrideHoverText
     internal static void UpdateAddWoodSwitchHoverText(Smelter __instance, ref string result)
     {
         int inInv = GetItemCountInInventoryAndContainers(__instance.m_fuelItem.name, __instance.m_fuelItem.m_itemData.m_shared.m_name, __instance);
-        int amount = Math.Min(__instance.m_maxFuel - Mathf.CeilToInt(__instance.GetFuel()), inInv);
+        int amount = Math.Min(__instance.m_maxFuel - Mathf.CeilToInt(AzuCraftyBoxes.Util.GameAccess.SmelterFuel(__instance)), inInv);
         __instance.m_fuelItem.m_itemData.m_dropPrefab = __instance.m_fuelItem.gameObject;
         if (amount > 0)
         {
@@ -77,11 +77,11 @@ public static class OverrideHoverText
 
     internal static void UpdateAddOreSwitchHoverText(Smelter __instance, ref string result)
     {
-        int free = __instance.m_maxOre - __instance.GetQueueSize();
+        int free = __instance.m_maxOre - AzuCraftyBoxes.Util.GameAccess.SmelterQueueSize(__instance);
         List<string> items = new();
 
         // Prioritize conversions where the player has items in inventory, matching fill behavior
-        Inventory playerInv = Player.m_localPlayer?.m_inventory;
+        Inventory playerInv = Player.m_localPlayer?.GetInventory();
         IEnumerable<Smelter.ItemConversion> orderedConversions = playerInv != null
             ? __instance.m_conversion
                 .OrderByDescending(ic => playerInv.HaveItem(ic.m_from.m_itemData.m_shared.m_name) ? 1 : 0)
@@ -117,7 +117,7 @@ public static class OverrideHoverText
 
     private static int GetItemCountInInventoryAndContainers(string prefabName, string itemName, Smelter smelterInstance)
     {
-        int inInv = Player.m_localPlayer?.m_inventory.CountItems(itemName) ?? 0;
+        int inInv = Player.m_localPlayer?.GetInventory().CountItems(itemName) ?? 0;
         List<IContainer> nearbyContainers = Boxes.QueryFrame.Get(smelterInstance, AzuCraftyBoxesPlugin.mRange.Value);
 
         foreach (IContainer c in nearbyContainers)
@@ -134,32 +134,32 @@ public static class OverrideHoverText
     }
 }
 
-[HarmonyPatch(typeof(Smelter), nameof(Smelter.QueueOre))]
+[HarmonyPatch(typeof(Smelter), "QueueOre")]
 static class PreventOverfillJIC_SmelterQueueOrePatch
 {
     static bool Prefix(Smelter __instance, string name)
     {
-        return __instance.GetQueueSize() < __instance.m_maxOre;
+        return AzuCraftyBoxes.Util.GameAccess.SmelterQueueSize(__instance) < __instance.m_maxOre;
     }
 }
 
-[HarmonyPatch(typeof(Smelter), nameof(Smelter.RPC_AddFuel))]
+[HarmonyPatch(typeof(Smelter), "RPC_AddFuel")]
 static class CapFuel_SmelterRPC_AddFuelPatch
 {
     static bool Prefix(Smelter __instance)
     {
-        if (!__instance.m_nview.IsOwner()) return true;
-        return !(__instance.GetFuel() >= __instance.m_maxFuel);
+        if (!__instance.GetComponent<ZNetView>().IsOwner()) return true;
+        return !(AzuCraftyBoxes.Util.GameAccess.SmelterFuel(__instance) >= __instance.m_maxFuel);
     }
 }
 
-[HarmonyPatch(typeof(Smelter), nameof(Smelter.OnAddOre))]
+[HarmonyPatch(typeof(Smelter), "OnAddOre")]
 static class SmelterOnAddOrePatch
 {
     [HarmonyPriority(Priority.High)]
     static bool Prefix(Smelter __instance, Humanoid user, ItemDrop.ItemData item, ZNetView ___m_nview)
     {
-        int ore = __instance.GetQueueSize();
+        int ore = AzuCraftyBoxes.Util.GameAccess.SmelterQueueSize(__instance);
         bool pullAll = AzuCraftyBoxesPlugin.fillAllModKey.Value.IsKeyHeld();
         if (MiscFunctions.ShouldPrevent() || item != null || ore >= __instance.m_maxOre)
             return true;
@@ -202,7 +202,7 @@ static class SmelterOnAddOrePatch
                 if (newItem == null) continue;
                 try
                 {
-                    GameObject itemPrefab = ObjectDB.instance.GetItemPrefab(__instance.m_fuelItem.GetPrefabName(itemConversion.m_from.gameObject.name));
+                    GameObject itemPrefab = ObjectDB.instance.GetItemPrefab(AzuCraftyBoxes.Util.GameAccess.ItemDropGetPrefabName(itemConversion.m_from.gameObject.name));
 
                     newItem.m_dropPrefab = itemPrefab;
                 }
@@ -221,7 +221,7 @@ static class SmelterOnAddOrePatch
 
                 int amount = pullAll ? Mathf.Min(__instance.m_maxOre - ore, inventory.CountItems(name)) : 1;
                 if (amount <= 0) continue;
-                added.TryAdd(name, 0);
+                if (!added.ContainsKey(name)) added[name] = 0;
                 added[name] += amount;
                 ore += amount;
 
@@ -251,7 +251,7 @@ static class SmelterOnAddOrePatch
                     int amount = pullAll ? Mathf.Min(__instance.m_maxOre - ore, result) : 1;
                     if (amount <= 0) break;
 
-                    added.TryAdd(name, 0);
+                    if (!added.ContainsKey(name)) added[name] = 0;
                     added[name] += amount;
                     ore += amount;
                     AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogIfReleaseAndDebugEnable($"Pull ALL is {pullAll}");
@@ -284,7 +284,7 @@ static class SmelterOnAddOrePatch
     }
 }
 
-[HarmonyPatch(typeof(Smelter), nameof(Smelter.OnAddFuel))]
+[HarmonyPatch(typeof(Smelter), "OnAddFuel")]
 [HarmonyBefore("org.bepinex.plugins.conversionsizespeed")]
 static class SmelterOnAddFuelPatch
 {
@@ -300,7 +300,7 @@ static class SmelterOnAddFuelPatch
 
         int added = 0;
 
-        float fuel = __instance.GetFuel();
+        float fuel = AzuCraftyBoxes.Util.GameAccess.SmelterFuel(__instance);
         if (fuel > __instance.m_maxFuel - 1)
         {
             user.Message(MessageHud.MessageType.Center, "$msg_itsfull");

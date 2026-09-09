@@ -3,17 +3,17 @@ using AzuCraftyBoxes.Util.Functions;
 
 namespace AzuCraftyBoxes.Patches;
 
-[HarmonyPatch(typeof(CookingStation), nameof(CookingStation.RPC_AddFuel))]
+[HarmonyPatch(typeof(CookingStation), "RPC_AddFuel")]
 static class CapFuel_CookingStationRPC_AddFuelPatch
 {
     static bool Prefix(CookingStation __instance)
     {
-        if (!__instance.m_nview.IsOwner()) return true;
-        return __instance.GetFuel() < __instance.m_maxFuel;
+        if (!__instance.GetComponent<ZNetView>().IsOwner()) return true;
+        return AzuCraftyBoxes.Util.GameAccess.CookingStationFuel(__instance) < __instance.m_maxFuel;
     }
 }
 
-[HarmonyPatch(typeof(CookingStation), nameof(CookingStation.OnAddFuelSwitch))]
+[HarmonyPatch(typeof(CookingStation), "OnAddFuelSwitch")]
 static class CookingStationOnAddFuelSwitchPatch
 {
     static bool Prefix(CookingStation __instance, ref bool __result, Humanoid user, ItemDrop.ItemData item, ZNetView ___m_nview)
@@ -21,7 +21,7 @@ static class CookingStationOnAddFuelSwitchPatch
         AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogIfReleaseAndDebugEnable($"(CookingStationOnAddFuelSwitchPatch) Looking for fuel");
 
         if (MiscFunctions.ShouldPrevent() || item != null ||
-            __instance.GetFuel() > __instance.m_maxFuel - 1 ||
+            AzuCraftyBoxes.Util.GameAccess.CookingStationFuel(__instance) > __instance.m_maxFuel - 1 ||
             (user.GetInventory().HaveItem(__instance.m_fuelItem.m_itemData.m_shared.m_name) && Boxes.CanItemBePulled(Utils.GetPrefabName(__instance.gameObject), __instance.m_fuelItem.name)))
             return true;
 
@@ -62,7 +62,7 @@ static class CookingStationOnAddFuelSwitchPatch
     }
 }
 
-[HarmonyPatch(typeof(CookingStation), nameof(CookingStation.FindCookableItem))]
+[HarmonyPatch(typeof(CookingStation), "FindCookableItem")]
 static class CookingStationFindCookableItemPatch
 {
     static void Postfix(CookingStation __instance, ref ItemDrop.ItemData __result)
@@ -70,7 +70,7 @@ static class CookingStationFindCookableItemPatch
         AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogIfReleaseAndDebugEnable($"(CookingStationFindCookableItemPatch) Looking for cookable");
 
         if (MiscFunctions.ShouldPrevent() || __result != null ||
-            (__instance.m_requireFire && !__instance.IsFireLit() || __instance.GetFreeSlot() == -1))
+            (__instance.m_requireFire && !AzuCraftyBoxes.Util.GameAccess.CookingStationFireLit(__instance) || AzuCraftyBoxes.Util.GameAccess.CookingStationFreeSlot(__instance) == -1))
             return;
 
         AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogIfReleaseAndDebugEnable($"(CookingStationFindCookableItemPatch) Missing cookable in player inventory");
@@ -100,7 +100,7 @@ static class CookingStationFindCookableItemPatch
                 }
 
                 AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogIfReleaseAndDebugEnable($"(CookingStationFindCookableItemPatch) Container at {c.GetPosition()} has {result} {fromPrefabName}, taking one");
-                GameObject drop = ObjectDB.instance.m_itemByHash[fromPrefabName.GetStableHashCode()];
+                GameObject drop = ObjectDB.instance.GetItemPrefab(fromPrefabName);
                 ItemDrop.ItemData itemData = drop.GetComponent<ItemDrop>().m_itemData.Clone();
                 itemData.m_dropPrefab = drop;
                 __result = itemData;

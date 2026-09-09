@@ -4,7 +4,7 @@ using TMPro;
 
 namespace AzuCraftyBoxes.Patches;
 
-[HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.SetupRequirementList))]
+[HarmonyPatch(typeof(InventoryGui), "SetupRequirementList")]
 static class InventoryGuiCollectRequirements
 {
     public static Dictionary<Piece.Requirement, int> actualAmounts = new();
@@ -21,7 +21,7 @@ static class InventoryGuiCollectRequirements
     }
 }
 
-[HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.SetupRequirement))]
+[HarmonyPatch(typeof(InventoryGui), "SetupRequirement")]
 static class InventoryGuiSetupRequirementPatch
 {
     static void Postfix(InventoryGui __instance, Transform elementRoot, Piece.Requirement req, Player player, bool craft, int quality, int craftMultiplier = 1)

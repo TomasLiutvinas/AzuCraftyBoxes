@@ -30,7 +30,7 @@ public class MiscFunctions
 
     internal static bool ShouldSkipContainer(Container container)
     {
-        return ShouldPrevent() || container.GetInventory() == null || !container.m_nview.IsValid() || container.m_nview.GetZDO().GetLong("creator".GetStableHashCode()) == 0L;
+        return ShouldPrevent() || container.GetInventory() == null || !container.GetComponent<ZNetView>().IsValid() || container.GetComponent<ZNetView>().GetZDO().GetLong("creator".GetStableHashCode()) == 0L;
     }
 
     internal static bool HasAccessToContainer(Container container)
@@ -40,11 +40,11 @@ public class MiscFunctions
         // Only add containers that the player should have access to
         if (WardIsLovePlugin.IsLoaded() && WardIsLovePlugin.WardEnabled()!.Value && WardMonoscript.CheckAccess(container.transform.position, flash: false, wardCheck: true))
         {
-            hasAccess = container.CheckAccess(playerId);
+            hasAccess = GameAccess.ContainerCheckAccess(container, playerId);
         }
         else
         {
-            hasAccess = container.CheckAccess(playerId) && PrivateArea.CheckAccess(container.transform.position, flash: false, wardCheck: true);
+            hasAccess = GameAccess.ContainerCheckAccess(container, playerId) && PrivateArea.CheckAccess(container.transform.position, flash: false, wardCheck: true);
         }
 
         return hasAccess;

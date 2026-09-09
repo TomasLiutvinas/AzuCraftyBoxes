@@ -1,3 +1,4 @@
+using AzuCraftyBoxes.Util;
 using AzuCraftyBoxes.Util.Functions;
 
 namespace AzuCraftyBoxes.IContainers;
@@ -49,8 +50,8 @@ public class VanillaContainer(Container _container) : IContainer
             }
         }
 
-        _container.Save();
-        cInventory.Changed();
+        GameAccess.ContainerSave(_container);
+        GameAccess.InventoryChanged(cInventory);
         AzuCraftyBoxesPlugin.AzuCraftyBoxesLogger.LogIfReleaseAndDebugEnable("Saved container");
 
         if (totalAmount >= totalRequirement)
@@ -67,8 +68,8 @@ public class VanillaContainer(Container _container) : IContainer
     
     public void Save()
     {
-        _container.Save();
-        _container.m_inventory?.Changed();
+        GameAccess.ContainerSave(_container);
+        GameAccess.InventoryChanged(_container.GetInventory());
     }
 
     public Vector3 GetPosition() => _container.transform.position;

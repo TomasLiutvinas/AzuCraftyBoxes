@@ -63,7 +63,7 @@ namespace AzuCraftyBoxes.IContainers
             }
             else
             {
-                inv.Changed();
+                AzuCraftyBoxes.Util.GameAccess.InventoryChanged(inv);
             }
 
             return totalAmount;
@@ -110,7 +110,7 @@ namespace AzuCraftyBoxes.IContainers
             }
             else
             {
-                inv.Changed();
+                AzuCraftyBoxes.Util.GameAccess.InventoryChanged(inv);
             }
         }
 
@@ -126,7 +126,7 @@ namespace AzuCraftyBoxes.IContainers
             Inventory? inv = GetInventory();
             if (inv != null)
             {
-                inv.Changed();
+                AzuCraftyBoxes.Util.GameAccess.InventoryChanged(inv);
             }
 
             if (!Jewelcrafting.API.IsFreelyAccessibleInventory(_gemBagItem))

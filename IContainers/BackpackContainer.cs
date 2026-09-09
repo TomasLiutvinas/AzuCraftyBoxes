@@ -51,7 +51,7 @@ public class BackpackContainer(ItemContainer _container) : IContainer
         try
         {
             _container.Save();
-            cInventory.Changed();
+            AzuCraftyBoxes.Util.GameAccess.InventoryChanged(cInventory);
         }
         catch
         {
@@ -91,7 +91,7 @@ public class BackpackContainer(ItemContainer _container) : IContainer
         try
         {
             _container.Save();
-            _container.Inventory?.Changed();
+            AzuCraftyBoxes.Util.GameAccess.InventoryChanged(_container.Inventory);
         }
         catch (Exception e)
         {

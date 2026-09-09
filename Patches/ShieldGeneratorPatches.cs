@@ -3,7 +3,7 @@ using AzuCraftyBoxes.Util.Functions;
 
 namespace AzuCraftyBoxes.Patches
 {
-    [HarmonyPatch(typeof(ShieldGenerator), nameof(ShieldGenerator.OnHoverAddFuel))]
+    [HarmonyPatch(typeof(ShieldGenerator), "OnHoverAddFuel")]
     [HarmonyBefore("org.bepinex.plugins.conversionsizespeed")]
     static class ShieldGeneratorOnHoverAddFuelPatch
     {
@@ -37,18 +37,18 @@ namespace AzuCraftyBoxes.Patches
                 return true;
             }
 
-            return !Player.m_localPlayer.m_hovering || Player.m_localPlayer.m_hovering.GetComponentInParent<ShieldGenerator>() != __instance;
+            return !Player.m_localPlayer.GetHoverObject() || Player.m_localPlayer.GetHoverObject().GetComponentInParent<ShieldGenerator>() != __instance;
         }
 
         internal static void UpdateAddFuelSwitchHoverText(ShieldGenerator __instance, ref string result)
         {
-            double free = __instance.m_maxFuel - __instance.GetFuel();
+            double free = __instance.m_maxFuel - AzuCraftyBoxes.Util.GameAccess.ShieldGeneratorFuel(__instance);
             List<string> items = new();
 
             foreach (ItemDrop fuelItem in __instance.m_fuelItems)
             {
                 string sharedName = fuelItem.m_itemData.m_shared.m_name;
-                int inInv = Player.m_localPlayer?.m_inventory.CountItems(sharedName) ?? 0;
+                int inInv = Player.m_localPlayer?.GetInventory().CountItems(sharedName) ?? 0;
                 int inContainers = 0;
 
                 List<IContainer> nearbyContainers = Boxes.QueryFrame.Get(__instance, AzuCraftyBoxesPlugin.mRange.Value);
@@ -85,17 +85,17 @@ namespace AzuCraftyBoxes.Patches
         }
     }
 
-    [HarmonyPatch(typeof(ShieldGenerator), nameof(ShieldGenerator.RPC_AddFuel))]
+    [HarmonyPatch(typeof(ShieldGenerator), "RPC_AddFuel")]
     static class CapFuel_ShieldGeneratorRPC_AddFuelPatch
     {
         static bool Prefix(ShieldGenerator __instance)
         {
-            if (!__instance.m_nview.IsOwner()) return true;
-            return __instance.GetFuel() < __instance.m_maxFuel;
+            if (!__instance.GetComponent<ZNetView>().IsOwner()) return true;
+            return AzuCraftyBoxes.Util.GameAccess.ShieldGeneratorFuel(__instance) < __instance.m_maxFuel;
         }
     }
 
-    [HarmonyPatch(typeof(ShieldGenerator), nameof(ShieldGenerator.OnAddFuel))]
+    [HarmonyPatch(typeof(ShieldGenerator), "OnAddFuel")]
     [HarmonyBefore("org.bepinex.plugins.conversionsizespeed")]
     static class ShieldGeneratorOnAddFuelPatch
     {
@@ -121,7 +121,7 @@ namespace AzuCraftyBoxes.Patches
 
             int added = 0;
 
-            float fuel = __instance.GetFuel();
+            float fuel = AzuCraftyBoxes.Util.GameAccess.ShieldGeneratorFuel(__instance);
             if (fuel > __instance.m_maxFuel - 1)
             {
                 user.Message(MessageHud.MessageType.Center, "$msg_itsfull");
