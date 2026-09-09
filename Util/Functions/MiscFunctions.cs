@@ -30,7 +30,12 @@ public class MiscFunctions
 
     internal static bool ShouldSkipContainer(Container container)
     {
-        return ShouldPrevent() || container.GetInventory() == null || !container.GetComponent<ZNetView>().IsValid() || container.GetComponent<ZNetView>().GetZDO().GetLong("creator".GetStableHashCode()) == 0L;
+        if (ShouldPrevent() || container == null) return true;
+        if (container.GetInventory() == null) return true;
+        ZNetView nview = container.GetComponent<ZNetView>();
+        if (nview == null || !nview.IsValid()) return true;
+        ZDO? zdo = nview.GetZDO();
+        return zdo == null || zdo.GetLong("creator".GetStableHashCode()) == 0L;
     }
 
     internal static bool HasAccessToContainer(Container container)
